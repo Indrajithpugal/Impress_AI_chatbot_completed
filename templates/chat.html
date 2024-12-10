@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Quizbot</title>
     <style>
         body {
             font-family: Arial, sans-serif;
         }
+
         .chat-container {
             max-width: 400px;
             margin: 0 auto;
@@ -14,35 +16,43 @@
             padding: 10px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+
         .chat-messages {
             list-style: none;
             padding: 0;
             margin: 0;
         }
+
         .message {
             display: flex;
             margin-bottom: 10px;
         }
+
         .user-message {
             justify-content: flex-end;
         }
+
         .bot-message {
             justify-content: flex-start;
         }
+
         .message-text {
             background-color: #f0f0f0;
             border-radius: 15px;
             padding: 8px 15px;
             max-width: 70%;
         }
+
         .user-message .message-text {
             background-color: #e1e1e1;
             color: #333;
         }
+
         .input-container {
             display: flex;
             margin-top: 10px;
         }
+
         .input-box {
             flex: 1;
             border: 1px solid #ccc;
@@ -52,6 +62,7 @@
             background-color: #f0f0f0;
             color: #333;
         }
+
         .send-button {
             background-color: #777;
             color: #fff;
@@ -63,19 +74,20 @@
         }
     </style>
 </head>
+
 <body>
     <div class="chat-container">
         <ul class="chat-messages" id="chat-messages">
             {% for message in request.session.message_history %}
-                {% if message.is_user %}
-                <li class="message user-message">
-                    <div class="message-text">{{message.text}}</div>
-                </li>
-                {% else %}
-                <li class="message bot-message">
-                    <div class="message-text">{{message.text}}</div>
-                </li>
-                {% endif %}
+            {% if message.is_user %}
+            <li class="message user-message">
+                <div class="message-text">{{message.text}}</div>
+            </li>
+            {% else %}
+            <li class="message bot-message">
+                <div class="message-text">{{message.text}}</div>
+            </li>
+            {% endif %}
             {% endfor %}
         </ul>
         <div class="input-container">
@@ -87,32 +99,34 @@
     <script>
 
         const chatSocket = new WebSocket(
-            'ws://'
-            + window.location.host
-            + '/chat/'
+            'ws://' + window.location.host + '/chat/'
         );
 
-        chatSocket.onmessage = function(e) {
+        // Handle incoming messages
+        chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
             addMessage(data.text, data.is_user);
         };
 
-        chatSocket.onclose = function(e) {
+        // Handle WebSocket closure
+        chatSocket.onclose = function (e) {
             console.error('Chat socket closed unexpectedly');
         };
 
+        // Send user message when pressing Enter
         document.querySelector('#input-box').focus();
-        document.querySelector('#input-box').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
+        document.querySelector('#input-box').onkeyup = function (e) {
+            if (e.keyCode === 13) {  // Enter key
                 document.querySelector('#send-button').click();
             }
         };
 
-        document.querySelector('#send-button').onclick = function(e) {
+        // Send user message on button click
+        document.querySelector('#send-button').onclick = function (e) {
             const inputBox = document.getElementById('input-box');
             const userMessage = inputBox.value.trim();
             if (!userMessage) {
-                return
+                return;
             }
             chatSocket.send(JSON.stringify({
                 'message': userMessage
@@ -120,32 +134,35 @@
             inputBox.value = '';
         };
 
-        document.querySelector('#reset-button').onclick = function(e) {
+        // Reset chat and session
+        document.querySelector('#reset-button').onclick = function (e) {
             const inputBox = document.getElementById('input-box');
             inputBox.value = '/reset';
             document.querySelector('#send-button').click();
-            location.reload()
+            location.reload();
         };
 
-    // Function to add a new message to the chat container
-    function addMessage(text, isUser = false) {
-        const chatMessages = document.getElementById('chat-messages');
-        const messageClass = isUser ? 'user-message' : 'bot-message';
-        const messageText = `
-            <li class="message ${messageClass}">
-                <div class="message-text">${text}</div>
-            </li>
-        `;
-        chatMessages.insertAdjacentHTML('beforeend', messageText);
-    }
+        // Function to add messages to the chat
+        function addMessage(text, isUser = false) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageClass = isUser ? 'user-message' : 'bot-message';
+            const messageText = `
+                <li class="message ${messageClass}">
+                    <div class="message-text">${text}</div>
+                </li>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', messageText);
+        }
 
-    // Function to handle user message submission
-    function sendMessage() {
-        const inputBox = document.getElementById('input-box');
-        const userMessage = inputBox.value.trim();
-
-    }
+        // Send a ping message every 30 seconds to keep the WebSocket connection alive
+        setInterval(() => {
+            if (chatSocket.readyState === WebSocket.OPEN) {
+                // Send a ping message to the server
+                chatSocket.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000); // 30 seconds interval
 
     </script>
 </body>
+
 </html>

@@ -4,7 +4,8 @@ from django.shortcuts import render
 
 
 def chat(request):
+    print("chat triggered")
     if not request.session.session_key:
         request.session.create()
 
-    return render(request, 'chat.html')
+    return render(request, "chat.html")
